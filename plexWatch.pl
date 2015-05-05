@@ -1359,6 +1359,7 @@ sub GetSessions() {
         }
 
         my $data = XMLin(encode('utf8',$XML),KeyAttr => { Video => 'sessionKey' }, ForceArray => ['Video']);
+        my $trackData = XMLin(encode('utf8',$XML),KeyAttr => {Track => 'sessionKey'}, ForceArray => ['Track']);
 
         # verify xml results/remove invalid and unwanted items
         my $container = {};
@@ -1378,6 +1379,24 @@ sub GetSessions() {
                 $container->{$key} = $data->{'Video'}->{$key};
             } else {
                 my $dmsg = "Excluding non library content: $data->{'Video'}->{$key}->{'title'}";
+                &DebugLog($dmsg) if $dmsg;
+            }
+        }
+        
+        # verify xml results/remove invalid and unwanted items
+        foreach my $key (keys %{$trackData->{'Track'}}) {
+            my $libraryKey = $trackData->{'Track'}->{$key}->{'key'};
+            # any extras will contain the key "extraType". I am not sure what types there are as of yet.
+            my $isExtra = $trackData->{'Track'}->{$key}->{'extraType'};
+            if (defined($isExtra)) {
+                my $dmsg = "Excluding extra type: $isExtra";
+                &DebugLog($dmsg) if $dmsg;
+            }
+            # should we exclude the item? for now this is mainly related to non library content (channels)
+            elsif (!excludeContent($libraryKey,$isExtra)) {
+                $container->{$key} = $trackData->{'Track'}->{$key};
+            } else {
+                my $dmsg = "Excluding non library content: $trackData->{'Track'}->{$key}->{'title'}";
                 &DebugLog($dmsg) if $dmsg;
             }
         }
